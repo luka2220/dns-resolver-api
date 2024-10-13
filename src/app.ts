@@ -1,61 +1,69 @@
-import { Buffer } from "buffer";
-import * as util from "util"
-
-// NOTE: Question section for a DNS message
-interface QuestionSection {
-	domainName: string;
-	qtype: number;			// Query type set to 1 for standard query
-	qclass: number;			// Query class set to 1 for internet class
-}
+import { Buffer } from 'buffer';
 
 interface DNSMessage {
-	id: number;               // Transaction id (typically 22)
-	flags: number;            // Control flags (set to 1 for recursion desired)
-	numQuestions: number;     // Number of questions (set to one since only one is being sent)
-	ancount: 0 | 1;           // Answer Rescource Records, set to 0 for sending a query
-	nscount: number;          // Authority Resource Records, set to 0 since we have no auth records 
-	arcount: number;		  // Additional resource records, set 0 as we have no additional resource records
-	question: QuestionSection;         // The question as a Buffer type
+    id: number; // Transaction id (typically 22); size: 16bits
+    flags: number; // Control flags (set to 1 for recursion desired); 16bits
+    numQuestions: number; // Number of questions (set to one since only one is being sent); 16bits
+    ancount: 0 | 1; // Answer Rescource Records, set to 0 for sending a query; 16bits
+    nscount: number; // Authority Resource Records, set to 0 since we have no auth records; 16bits
+    arcount: number; // Additional resource records, set 0 as we have no additional resource records; 16bits
+    question: Buffer; // The question as a Buffer type
+    tquery: number; // Query type, should be set to 1
+    cquery: number; // Query class, set to 1
 }
 
-function encodeDNSMessage(msg: DNSMessage): string {
-	let msgString = util.format("%d%d%d%d%d%d%s%d%d",
-		msg.id,
-		msg.flags,
-		msg.numQuestions,
-		msg.ancount,
-		msg.nscount,
-		msg.arcount,
-		msg.question.domainName,
-		msg.question.qtype,
-		msg.question.qclass
-	);
+// NOTE: Creates a message buffer to store the DNS message being sent
+// Allocates 12 bytes for the header plus the length of the question
+function createDNSMessageBuffer(message: DNSMessage): Buffer {
+    const msgBuffer = Buffer.alloc(16 + message.question.length);
 
-	const buf = Buffer.from(msgString);
-	const endcodedMsgHex = buf.toString('hex');
+    msgBuffer.writeUInt16BE(message.id, 0);
+    msgBuffer.writeUInt16BE(message.flags, 2);
+    msgBuffer.writeUInt16BE(message.numQuestions, 4);
+    msgBuffer.writeUInt16BE(message.ancount, 6);
+    msgBuffer.writeUInt16BE(message.nscount, 8);
+    msgBuffer.writeUInt16BE(message.arcount, 10);
+    message.question.copy(msgBuffer, 12);
+    msgBuffer.writeUInt16BE(message.tquery, 12 + message.question.length);
+    msgBuffer.writeUInt16BE(message.cquery, 14 + message.question.length);
 
-	return endcodedMsgHex
+    return msgBuffer;
 }
 
-const start = () => {
-	console.log("DNS resolver running 👾\n");
+// NOTE: Encodes the host name string for the name field
+// i.e If we are looking up dns.google.com it will be encoded as the following 3dns6google3com0
+function encodeHostname(q: string): Buffer {
+    const arr = q.split('.');
+    const parts: Buffer[] = [];
 
-	let tc1: DNSMessage = {
-		id: 22,
-		flags: 1,
-		numQuestions: 1,
-		ancount: 0,
-		nscount: 0,
-		arcount: 0,
-		question: {
-			domainName: "3dns6google3com0",
-			qtype: 1,
-			qclass: 1
-		}
-	}
+    arr.forEach((label) => {
+        const len = Buffer.from([label.length]);
+        const labelBuffer = Buffer.from(label);
+        parts.push(len, labelBuffer);
+    });
 
-	let r1: string = encodeDNSMessage(tc1);
-	console.log(`DNS message tc1 encoded => ${r1}`)
+    parts.push(Buffer.from([0x00]));
+
+    return Buffer.concat(parts);
 }
 
-start();
+const testing = () => {
+    console.log('DNS resolver running 👾\n');
+
+    let tc1: DNSMessage = {
+        id: 22,
+        flags: 0x0100,
+        numQuestions: 1,
+        ancount: 0,
+        nscount: 0,
+        arcount: 0,
+        question: encodeHostname('dns.google.com'),
+        tquery: 1,
+        cquery: 1,
+    };
+
+    let result = createDNSMessageBuffer(tc1);
+    console.log(`Result of encoded DNS message: ${result.toString('hex')}`);
+};
+
+testing();
