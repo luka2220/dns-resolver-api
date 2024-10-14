@@ -1,6 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const encoding_1 = require("./encoding");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const encoding_1 = require('./encoding');
 const run = () => {
     console.log('DNS resolver running 👾\n');
     let tc1 = {
