@@ -1,7 +1,7 @@
 import { DNSMessage, encodeHostname, createDNSMessageBuffer } from './encoding';
 import { sendDNSMessageUDP } from './udp';
 
-const run = () => {
+const run = async () => {
     console.log('DNS resolver running 👾\n');
 
     let tc1: DNSMessage = {
@@ -18,7 +18,7 @@ const run = () => {
 
     const msg1 = createDNSMessageBuffer(tc1);
     // console.log(`Result of encoded DNS message: ${msg1.toString('hex')}`);
-    sendDNSMessageUDP(msg1);
+    await sendDNSMessageUDP(msg1);
 };
 
 run();
