@@ -1,7 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const vitest_1 = require("vitest");
-const encoding_1 = require("../src/encoding");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const vitest_1 = require('vitest');
+const encoding_1 = require('../src/encoding');
 (0, vitest_1.describe)('encodeHostname', () => {
     (0, vitest_1.it)('should encode a hostname string correctly', () => {
         const input = 'dns.google.com';
@@ -44,16 +44,28 @@ const dnsMessageCase2 = {
     cquery: 1,
 };
 (0, vitest_1.describe)('createDNSMessageBuffer', () => {
-    (0, vitest_1.it)('should encode the dns message correctly for dns.google.com', () => {
-        const expectedHex = '00160100000100000000000003646e7306676f6f676c6503636f6d0000010001';
-        const actualBuffer = (0, encoding_1.createDNSMessageBuffer)(dnsMessageCase1);
-        const actualHex = actualBuffer.toString('hex');
-        (0, vitest_1.expect)(actualHex).toBe(expectedHex);
-    });
-    (0, vitest_1.it)('should encode the dns message correctly for example.com', () => {
-        const expectedHex = '002101000001000000000000076578616d706c6503636f6d0000010001';
-        const actualBuffer = (0, encoding_1.createDNSMessageBuffer)(dnsMessageCase2);
-        const actualHex = actualBuffer.toString('hex');
-        (0, vitest_1.expect)(actualHex).toBe(expectedHex);
-    });
+    (0, vitest_1.it)(
+        'should encode the dns message correctly for dns.google.com',
+        () => {
+            const expectedHex =
+                '00160100000100000000000003646e7306676f6f676c6503636f6d0000010001';
+            const actualBuffer = (0, encoding_1.createDNSMessageBuffer)(
+                dnsMessageCase1,
+            );
+            const actualHex = actualBuffer.toString('hex');
+            (0, vitest_1.expect)(actualHex).toBe(expectedHex);
+        },
+    );
+    (0, vitest_1.it)(
+        'should encode the dns message correctly for example.com',
+        () => {
+            const expectedHex =
+                '002101000001000000000000076578616d706c6503636f6d0000010001';
+            const actualBuffer = (0, encoding_1.createDNSMessageBuffer)(
+                dnsMessageCase2,
+            );
+            const actualHex = actualBuffer.toString('hex');
+            (0, vitest_1.expect)(actualHex).toBe(expectedHex);
+        },
+    );
 });

@@ -1,8 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
 exports.createDNSMessageBuffer = createDNSMessageBuffer;
 exports.encodeHostname = encodeHostname;
-const buffer_1 = require("buffer");
+const buffer_1 = require('buffer');
 // NOTE: Creates a message buffer to store the DNS message being sent
 // Allocates 12 bytes for the header plus the length of the question
 function createDNSMessageBuffer(message) {

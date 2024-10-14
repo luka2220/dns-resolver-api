@@ -1,4 +1,5 @@
-import { DNSMessage, encodeHostname, createDNSMessageBuffer } from "./encoding";
+import { DNSMessage, encodeHostname, createDNSMessageBuffer } from './encoding';
+import { sendDNSMessageUDP } from './udp';
 
 const run = () => {
     console.log('DNS resolver running 👾\n');
@@ -15,8 +16,9 @@ const run = () => {
         cquery: 1,
     };
 
-    let result = createDNSMessageBuffer(tc1);
-    console.log(`Result of encoded DNS message: ${result.toString('hex')}`);
+    const msg1 = createDNSMessageBuffer(tc1);
+    // console.log(`Result of encoded DNS message: ${msg1.toString('hex')}`);
+    sendDNSMessageUDP(msg1);
 };
 
 run();
