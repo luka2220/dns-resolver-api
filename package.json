@@ -4,6 +4,7 @@
     "main": "app.js",
     "scripts": {
         "test": "vitest",
+        "test:unit": "vitest",
         "build": "tsc",
         "start": "node dist/app.js",
         "dev": "ts-node src/app.ts",
