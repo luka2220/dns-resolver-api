@@ -46,3 +46,45 @@ export function encodeHostname(q: string): Buffer {
 
     return Buffer.concat(parts);
 }
+
+// NOTE: Structure for storing the header of a DNS message
+interface DNSHeader {
+    id: number; // Transaction id (typically 22); size: 16bits
+    flags: {
+        // Control flags (set to 1 for recursion desired); 16bits
+        recursion: number;
+        status: number;
+    };
+    numQuestions: number; // Number of questions (set to one since only one is being sent); 16bits
+    ancount: number; // Answer Rescource Records, set to 0 for sending a query; 16bits
+    nscount: number; // Authority Resource Records, set to 0 since we have no auth records; 16bits
+    arcount: number; // Additional resource records, set 0 as we have no additional resource records; 16bits
+}
+
+// NOTE: Parse through the servers response message and display the import data
+export function parseServerResponse(response: Buffer) {
+    console.log(`Server response = ${response.toString('hex')}`);
+
+    const responseHeader: DNSHeader = {
+        id: response.readUInt16BE(0),
+        flags: {
+            recursion: response.readUIntBE(2, 1),
+            status: response.readUIntBE(3, 1),
+        },
+        numQuestions: response.readUInt16BE(4),
+        ancount: response.readUInt16BE(6),
+        nscount: response.readUInt16BE(8),
+        arcount: response.readUInt16BE(10),
+    };
+
+    console.log(`Server DNS header response: `);
+    for (const [k, v] of Object.entries(responseHeader)) {
+        if (k == 'flags') {
+            for (const [fk, fv] of Object.entries(responseHeader[k])) {
+                console.log(`flags[${fk}]: ${fv}`);
+            }
+        } else {
+            console.log(`${k}: ${v}`);
+        }
+    }
+}
