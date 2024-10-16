@@ -1,5 +1,6 @@
-import { DNSMessage, encodeHostname, createDNSMessageBuffer } from './encoding';
+import { encodeHostname, createDNSMessageBuffer } from './encoding';
 import { sendDNSMessageUDP } from './udp';
+import { DNSMessage } from './types';
 
 const run = async () => {
     console.log('DNS resolver running 👾\n');
@@ -8,7 +9,7 @@ const run = async () => {
         id: 22,
         flags: 0x0100,
         numQuestions: 1,
-        ancount: 0,
+        ansCount: 0,
         nscount: 0,
         arcount: 0,
         question: encodeHostname('dns.google.com'),
@@ -17,7 +18,6 @@ const run = async () => {
     };
 
     const msg1 = createDNSMessageBuffer(tc1);
-    // console.log(`Result of encoded DNS message: ${msg1.toString('hex')}`);
     await sendDNSMessageUDP(msg1);
 };
 
