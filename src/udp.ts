@@ -1,14 +1,15 @@
 // NOTE: Creates a UDP client to send our DNS message to a name server
 import * as dgram from 'dgram';
+import { parseServerResponse } from './encoding';
 
 const client = dgram.createSocket('udp4');
 
 export function sendDNSMessageUDP(message: Buffer): Promise<void> {
     return new Promise((resolve, reject) => {
         client.on('message', (msg, info) => {
-            console.log('Data received from server : ' + msg.toString('hex'));
+            parseServerResponse(msg);
             console.log(
-                'Received %d bytes from %s:%d\n',
+                '\nMessage Info: \nReceived %d bytes from %s:%d\n',
                 msg.length,
                 info.address,
                 info.port,

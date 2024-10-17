@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-    DNSMessage,
-    createDNSMessageBuffer,
-    encodeHostname,
-} from '../src/encoding';
+import { createDNSMessageBuffer, encodeHostname } from '../src/encoding';
+import { DNSMessage } from '../src/types';
 
 describe('encodeHostname', () => {
     it('should encode a hostname string correctly', () => {
@@ -34,7 +31,7 @@ const dnsMessageCase1: DNSMessage = {
     id: 22,
     flags: 0x0100,
     numQuestions: 1,
-    ancount: 0,
+    ansCount: 0,
     nscount: 0,
     arcount: 0,
     question: encodeHostname('dns.google.com'),
@@ -46,7 +43,7 @@ const dnsMessageCase2: DNSMessage = {
     id: 33,
     flags: 0x0100,
     numQuestions: 1,
-    ancount: 0,
+    ansCount: 0,
     nscount: 0,
     arcount: 0,
     question: encodeHostname('example.com'),
