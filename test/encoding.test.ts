@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-    createDNSMessageBuffer,
-    encodeHostname,
-} from '../src/encoding';
-import { DNSMessage } from "../src/types";
+import { createDNSMessageBuffer, encodeHostname } from '../src/encoding';
+import { DNSMessage } from '../src/types';
 
 describe('encodeHostname', () => {
     it('should encode a hostname string correctly', () => {

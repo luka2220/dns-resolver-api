@@ -1,5 +1,17 @@
 import { Buffer } from 'buffer';
-import { DNSMessage, DNSHeader, DNSQuestionSection } from './types';
+import {
+    DNSMessage,
+    DNSHeader,
+    DNSQuestionSection,
+    DNSAnswerSection,
+} from './types';
+
+// NOTE: Utility function for reading n bytes from the buffer, and increasing the position n bytes
+function readNBytes(n: number, buf: Buffer, state: { pos: number }): number {
+    const bRead = buf.readUIntBE(state.pos, n);
+    state.pos += n;
+    return bRead;
+}
 
 // NOTE: Creates a message buffer to store the DNS message being sent
 // Allocates 12 bytes for the header plus the length of the question
@@ -52,7 +64,7 @@ export function parseServerResponse(response: Buffer) {
         arcount: response.readUInt16BE(10),
     };
 
-    console.log('Server DNS header response: ');
+    console.log('\nServer DNS header response: ');
     for (const [k, v] of Object.entries(responseHeader)) {
         if (k == 'flags') {
             for (const [fk, fv] of Object.entries(responseHeader[k])) {
@@ -63,23 +75,26 @@ export function parseServerResponse(response: Buffer) {
         }
     }
 
-    console.log('Server DNS question response: ');
-    const questionSection = parseDNSQuestion(
-        response,
-        responseHeader.numQuestions,
-    );
+    console.log('\nServer DNS question response: ');
+    const questionSection = parseDNSQuestion(response);
     for (const [k, v] of Object.entries(questionSection)) {
+        console.log(`${k}: ${v}`);
+    }
+
+    console.log('\nServer DNS answer response: ');
+    const answerSection = parseDNSAnswer(
+        response,
+        questionSection.currentPosition,
+    );
+    for (const [k, v] of Object.entries(answerSection)) {
         console.log(`${k}: ${v}`);
     }
 }
 
-// NOTE: Parses out the question sections of the DNS response message
+// NOTE: Parses out the question section of the DNS response message
 // The questions section starts at position 12 in the buffer since the
 // header secction take up the first 12 bytes (0 - 11)
-function parseDNSQuestion(
-    response: Buffer,
-    nQuestions: number,
-): DNSQuestionSection {
+function parseDNSQuestion(response: Buffer): DNSQuestionSection {
     let pos = 12;
     let label = '';
 
@@ -101,13 +116,36 @@ function parseDNSQuestion(
         }
     }
 
-    const parsedResponse: DNSQuestionSection = {
-        size: nQuestions,
-        label: label,
+    const parsedQuestion: DNSQuestionSection = {
+        qname: label,
         queryType: response.readUInt16BE(pos),
-        queryClass: response.readUInt16BE(pos + 2),
-        currentPosition: pos + 2,
+        queryClass: response.readUInt16BE(pos + 2), // adv. the pos 2 bytes ahead
+        currentPosition: pos + 4, // adv. the pos 4 bytes ahead
     };
 
-    return parsedResponse;
+    return parsedQuestion;
+}
+
+// NOTE: Parses out the answer section of the DNS response
+function parseDNSAnswer(
+    response: Buffer,
+    currentPosition: number,
+): DNSAnswerSection {
+    const state = { pos: currentPosition };
+    let rdlength = 0;
+
+    const answer: DNSAnswerSection = {
+        name: readNBytes(2, response, state),
+        type: readNBytes(2, response, state),
+        class: readNBytes(2, response, state),
+        ttl: readNBytes(4, response, state),
+        rdlength: ((): number => {
+            rdlength = readNBytes(2, response, state);
+            return rdlength;
+        })(),
+        rdata: readNBytes(rdlength, response, state),
+        currentPosition: state.pos,
+    };
+
+    return answer;
 }

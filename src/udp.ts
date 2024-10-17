@@ -9,7 +9,7 @@ export function sendDNSMessageUDP(message: Buffer): Promise<void> {
         client.on('message', (msg, info) => {
             parseServerResponse(msg);
             console.log(
-                'Received %d bytes from %s:%d\n',
+                '\nMessage Info: \nReceived %d bytes from %s:%d\n',
                 msg.length,
                 info.address,
                 info.port,
