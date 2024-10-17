@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 import {
     DNSMessage,
-    DNSHeader,
+    DNSHeaderSection,
     DNSQuestionSection,
     DNSAnswerSection,
 } from './types';
@@ -51,20 +51,10 @@ export function encodeHostname(q: string): Buffer {
 // NOTE: Parse through the servers response message and display the import data
 export function parseServerResponse(response: Buffer) {
     console.log(`Server response = ${response.toString('hex')}`);
-
-    const responseHeader: DNSHeader = {
-        id: response.readUInt16BE(0),
-        flags: {
-            recursion: response.readUIntBE(2, 1),
-            status: response.readUIntBE(3, 1),
-        },
-        numQuestions: response.readUInt16BE(4),
-        ansCount: response.readUInt16BE(6),
-        nscount: response.readUInt16BE(8),
-        arcount: response.readUInt16BE(10),
-    };
+    const state = { pos: 12 }; // buffer read position set to 12 to use after parsing the header section
 
     console.log('\nServer DNS header response: ');
+    const responseHeader = parseDNSHeader(response);
     for (const [k, v] of Object.entries(responseHeader)) {
         if (k == 'flags') {
             for (const [fk, fv] of Object.entries(responseHeader[k])) {
@@ -76,30 +66,57 @@ export function parseServerResponse(response: Buffer) {
     }
 
     console.log('\nServer DNS question response: ');
-    const questionSection = parseDNSQuestion(response);
-    for (const [k, v] of Object.entries(questionSection)) {
-        console.log(`${k}: ${v}`);
+    for (let i = 0; i < responseHeader.numQuestions; i++) {
+        console.log(`Question ${i + 1}`);
+
+        const questionSection = parseDNSQuestion(response, state.pos);
+        for (const [k, v] of Object.entries(questionSection)) {
+            console.log(`${k}: ${v}`);
+        }
+
+        state.pos = questionSection.currentPosition;
     }
 
     console.log('\nServer DNS answer response: ');
-    const answerSection = parseDNSAnswer(
-        response,
-        questionSection.currentPosition,
-    );
-    for (const [k, v] of Object.entries(answerSection)) {
-        console.log(`${k}: ${v}`);
+    for (let i = 0; i < responseHeader.ansCount; i++) {
+        console.log(`Answer ${i + 1}`);
+
+        const answerSection = parseDNSAnswer(response, state.pos);
+        for (const [k, v] of Object.entries(answerSection)) {
+            console.log(`${k}: ${v}`);
+        }
+
+        state.pos = answerSection.currentPosition;
     }
+}
+
+// NOTE: Parses the header section of the DNS response, 12 bytes (0 - 11)
+function parseDNSHeader(buf: Buffer): DNSHeaderSection {
+    return {
+        id: buf.readUInt16BE(0),
+        flags: {
+            recursion: buf.readUIntBE(2, 1),
+            status: buf.readUIntBE(3, 1),
+        },
+        numQuestions: buf.readUInt16BE(4),
+        ansCount: buf.readUInt16BE(6),
+        nscount: buf.readUInt16BE(8),
+        arcount: buf.readUInt16BE(10),
+    };
 }
 
 // NOTE: Parses out the question section of the DNS response message
 // The questions section starts at position 12 in the buffer since the
 // header secction take up the first 12 bytes (0 - 11)
-function parseDNSQuestion(response: Buffer): DNSQuestionSection {
-    let pos = 12;
+function parseDNSQuestion(
+    buf: Buffer,
+    currentPosition: number,
+): DNSQuestionSection {
+    let pos = currentPosition;
     let label = '';
 
     while (true) {
-        const byteLength = response.readUIntBE(pos, 1);
+        const byteLength = buf.readUIntBE(pos, 1);
         pos += 1;
 
         if (byteLength == 0) {
@@ -111,15 +128,15 @@ function parseDNSQuestion(response: Buffer): DNSQuestionSection {
         }
 
         for (let i = 0; i < byteLength; i++) {
-            label += String.fromCharCode(response.readUIntBE(pos, 1));
+            label += String.fromCharCode(buf.readUIntBE(pos, 1));
             pos += 1;
         }
     }
 
     const parsedQuestion: DNSQuestionSection = {
         qname: label,
-        queryType: response.readUInt16BE(pos),
-        queryClass: response.readUInt16BE(pos + 2), // adv. the pos 2 bytes ahead
+        queryType: buf.readUInt16BE(pos),
+        queryClass: buf.readUInt16BE(pos + 2), // adv. the pos 2 bytes ahead
         currentPosition: pos + 4, // adv. the pos 4 bytes ahead
     };
 

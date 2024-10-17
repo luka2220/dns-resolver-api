@@ -12,7 +12,7 @@ export interface DNSMessage {
 }
 
 // NOTE: Structure for the header of a DNS message
-export interface DNSHeader {
+export interface DNSHeaderSection {
     id: number; // Transaction id (typically 22); size: 16bits
     flags: {
         // Control flags (set to 1 for recursion desired); 16bits
