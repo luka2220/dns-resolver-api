@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createDNSMessageBuffer, encodeHostname } from '../src/encoding';
-import { DNSMessage } from '../src/types';
+import {
+    createDNSMessageBuffer,
+    encodeHostname,
+    parseDNSHeader,
+} from '../src/encoding';
+import { DNSMessage, DNSHeaderSection } from '../src/types';
 
 describe('encodeHostname', () => {
     it('should encode a hostname string correctly', () => {
@@ -27,31 +31,31 @@ describe('encodeHostname', () => {
     });
 });
 
-const dnsMessageCase1: DNSMessage = {
-    id: 22,
-    flags: 0x0100,
-    numQuestions: 1,
-    ansCount: 0,
-    nscount: 0,
-    arcount: 0,
-    question: encodeHostname('dns.google.com'),
-    tquery: 1,
-    cquery: 1,
-};
-
-const dnsMessageCase2: DNSMessage = {
-    id: 33,
-    flags: 0x0100,
-    numQuestions: 1,
-    ansCount: 0,
-    nscount: 0,
-    arcount: 0,
-    question: encodeHostname('example.com'),
-    tquery: 1,
-    cquery: 1,
-};
-
 describe('createDNSMessageBuffer', () => {
+    const dnsMessageCase1: DNSMessage = {
+        id: 22,
+        flags: 0x0100,
+        numQuestions: 1,
+        ansCount: 0,
+        nscount: 0,
+        arcount: 0,
+        question: encodeHostname('dns.google.com'),
+        tquery: 1,
+        cquery: 1,
+    };
+
+    const dnsMessageCase2: DNSMessage = {
+        id: 33,
+        flags: 0x0100,
+        numQuestions: 1,
+        ansCount: 0,
+        nscount: 0,
+        arcount: 0,
+        question: encodeHostname('example.com'),
+        tquery: 1,
+        cquery: 1,
+    };
+
     it('should encode the dns message correctly for dns.google.com', () => {
         const expectedHex =
             '00160100000100000000000003646e7306676f6f676c6503636f6d0000010001';
@@ -66,5 +70,99 @@ describe('createDNSMessageBuffer', () => {
         const actualBuffer = createDNSMessageBuffer(dnsMessageCase2);
         const actualHex = actualBuffer.toString('hex');
         expect(actualHex).toBe(expectedHex);
+    });
+});
+
+describe('DNS Header parsing', () => {
+    it('Test Case 1 - should properly parse and decode the DNS Header', () => {
+        const tc = Buffer.from('123481800001000100000000', 'hex');
+        const expected: DNSHeaderSection = {
+            id: 4660,
+            flags: {
+                qr: 1,
+                opcode: 0,
+                aa: 0,
+                tc: 0,
+                rd: 1,
+                ra: 1,
+                z: 0,
+                rcode: 0,
+            },
+            numQuestions: 1,
+            ansCount: 1,
+            nscount: 0,
+            arcount: 0,
+        };
+        const actual = parseDNSHeader(tc);
+        expect(actual).toEqual(expected);
+    });
+
+    it('Test Case 2 - should properly parse and decode the DNS header', () => {
+        const tc = Buffer.from('ABCD81800001000200000000', 'hex');
+        const expected: DNSHeaderSection = {
+            id: 43981,
+            flags: {
+                qr: 1,
+                opcode: 0,
+                aa: 0,
+                tc: 0,
+                rd: 1,
+                ra: 1,
+                z: 0,
+                rcode: 0,
+            },
+            numQuestions: 1,
+            ansCount: 2,
+            nscount: 0,
+            arcount: 0,
+        };
+        const actual = parseDNSHeader(tc);
+        expect(actual).toEqual(expected);
+    });
+
+    it('Test Case 3 - should properly parse and decode the DNS header', () => {
+        const tc = Buffer.from('567881820001000000000000', 'hex');
+        const expected: DNSHeaderSection = {
+            id: 22136,
+            flags: {
+                qr: 1,
+                opcode: 0,
+                aa: 0,
+                tc: 0,
+                rd: 1,
+                ra: 1,
+                z: 0,
+                rcode: 2,
+            },
+            numQuestions: 1,
+            ansCount: 0,
+            nscount: 0,
+            arcount: 0,
+        };
+        const actual = parseDNSHeader(tc);
+        expect(actual).toEqual(expected);
+    });
+
+    it('Test Case 4 - should properly parse and decode the DNS header', () => {
+        const tc = Buffer.from('9F3481800001000000010000', 'hex');
+        const expected: DNSHeaderSection = {
+            id: 40756,
+            flags: {
+                qr: 1,
+                opcode: 0,
+                aa: 0,
+                tc: 0,
+                rd: 1,
+                ra: 1,
+                z: 0,
+                rcode: 0,
+            },
+            numQuestions: 1,
+            ansCount: 0,
+            nscount: 1,
+            arcount: 0,
+        };
+        const actual = parseDNSHeader(tc);
+        expect(actual).toEqual(expected);
     });
 });
