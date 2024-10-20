@@ -159,7 +159,14 @@ export function parseDNSAnswer(
     let rdlength = 0;
 
     const answer: DNSAnswerSection = {
-        name: readNBytes(2, response, state),
+        name: ((): number => {
+            const nc = readNBytes(2, response, state)
+
+            // NOTE: Decrement the pos by 2 since as the operation in readNBytes() increased it by 1b
+            const raw = response.subarray(state.pos - 2, state.pos);
+            uncompressDomainName(raw);
+            return nc;
+        })(),
         type: readNBytes(2, response, state),
         class: readNBytes(2, response, state),
         ttl: readNBytes(4, response, state),
@@ -167,9 +174,21 @@ export function parseDNSAnswer(
             rdlength = readNBytes(2, response, state);
             return rdlength;
         })(),
-        rdata: readNBytes(rdlength, response, state),
+        rdata_ipAdd: ((): string => {
+            const raw = response.subarray(state.pos, state.pos + rdlength);
+            state.pos += rdlength;
+            return raw.toString('hex');
+        })(),
         currentPosition: state.pos,
     };
 
     return answer;
+}
+
+// NOTE: Uncompresses the name to the specified domain name
+function uncompressDomainName(octet: Buffer) {
+    console.log(`octet value = ${octet.toString('hex')}`);
+    const byte_raw = octet.readUInt16BE(0);
+    const first_bit_raw = byte_raw >> 15;
+    console.log(`first bit raw = ${first_bit_raw}`);
 }
