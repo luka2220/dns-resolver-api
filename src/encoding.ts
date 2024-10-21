@@ -170,10 +170,16 @@ export function parseDNSAnswer(
         rdata_ipAdd: ((): string => {
             const raw = response.subarray(state.pos, state.pos + rdlength);
             state.pos += rdlength;
-            return raw.toString('hex');
+            return cleanResourceIP(raw);
         })(),
         currentPosition: state.pos,
     };
 
     return answer;
+}
+
+// NOTE: Helper function for cleaning the RDATA resource record
+function cleanResourceIP(buf: Buffer): string {
+    const ipAddress = Array.from(buf).join('.');
+    return ipAddress;
 }
