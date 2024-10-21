@@ -167,9 +167,19 @@ export function parseDNSAnswer(
             rdlength = readNBytes(2, response, state);
             return rdlength;
         })(),
-        rdata: readNBytes(rdlength, response, state),
+        rdata_ipAdd: ((): string => {
+            const raw = response.subarray(state.pos, state.pos + rdlength);
+            state.pos += rdlength;
+            return cleanResourceIP(raw);
+        })(),
         currentPosition: state.pos,
     };
 
     return answer;
+}
+
+// NOTE: Helper function for cleaning the RDATA resource record
+function cleanResourceIP(buf: Buffer): string {
+    const ipAddress = Array.from(buf).join('.');
+    return ipAddress;
 }
