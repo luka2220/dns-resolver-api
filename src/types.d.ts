@@ -45,6 +45,6 @@ export interface DNSAnswerSection {
     class: number; // 2 bytes representing the class of data in the resource record
     ttl: number; // 4 bytes to represent TTL (time to live)
     rdlength: number; // 2 bytes specifing the length in octets of the rdata field
-    rdata: number; // Variable length string that describes the resource
+    rdata_ipAdd: string; // Variable length string that describes the resource
     currentPosition: number; // Indicates the where we are in the bytes buffer after parsing
 }
