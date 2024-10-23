@@ -91,19 +91,22 @@ export function parseServerResponse(response: Buffer) {
 }
 
 // NOTE: Parses the header section of the DNS response, 12 bytes (0 - 11)
+// For the flags we shift the bits based on the bit length for each field
+// as per RFC 1035 4.1.1 and use the bitwise AND operation to extract
+// specific bits from the result
 export function parseDNSHeader(buf: Buffer): DNSHeaderSection {
     const flags = buf.readInt16BE(2);
     return {
         id: buf.readUInt16BE(0),
         flags: {
-            qr: (flags & 0x8000) >> 15,
-            opcode: (flags & 0x7800) >> 11,
-            aa: (flags & 0x0400) >> 10,
-            tc: (flags & 0x0200) >> 9,
-            rd: (flags & 0x0100) >> 8,
-            ra: (flags & 0x0080) >> 7,
-            z: (flags & 0x0070) >> 4,
-            rcode: flags & 0x000f,
+            qr: (flags >> 15) & 1,
+            opcode: (flags >> 11) & 15,
+            aa: (flags >> 10) & 1,
+            tc: (flags >> 9) & 1,
+            rd: (flags >> 8) & 1,
+            ra: (flags >> 7) & 1,
+            z: (flags >> 4) & 7,
+            rcode: flags & 15,
         },
         numQuestions: buf.readUInt16BE(4),
         ansCount: buf.readUInt16BE(6),

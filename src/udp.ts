@@ -2,9 +2,13 @@
 import * as dgram from 'dgram';
 import { parseServerResponse } from './encoding';
 
-const client = dgram.createSocket('udp4');
+export function sendDNSMessageUDP(
+    message: Buffer,
+    address: string,
+    port: number,
+): Promise<void> {
+    const client = dgram.createSocket('udp4');
 
-export function sendDNSMessageUDP(message: Buffer): Promise<void> {
     return new Promise((resolve, reject) => {
         client.on('message', (msg, info) => {
             parseServerResponse(msg);
@@ -21,7 +25,7 @@ export function sendDNSMessageUDP(message: Buffer): Promise<void> {
             });
         });
 
-        client.send(message, 53, '8.8.8.8', (error) => {
+        client.send(message, port, address, (error) => {
             if (error) {
                 console.log(`An error occured: ${error}`);
                 client.close();
