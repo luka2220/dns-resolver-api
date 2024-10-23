@@ -39,7 +39,7 @@ export interface DNSQuestionSection {
 }
 
 // NOTE: Answer structure of a DNS query
-export interface DNSAnswerSection {
+export interface DNSResourceRecord {
     name: number; // 2 bytes are given for the domain name, which is compressed
     type: number; // 2 bytes for the type of DNS record
     class: number; // 2 bytes representing the class of data in the resource record

@@ -62,12 +62,12 @@ const run = async () => {
         nscount: 0,
         arcount: 0,
         question: encodeHostname(dnsServers.cloudflare.hostname),
-        tquery: 1,
+        tquery: 2,
         cquery: 1,
     };
 
-    const msg1 = createDNSMessageBuffer(googleTest);
-    await sendDNSMessageUDP(msg1, dnsServers.google.ipAddress, 53);
+    // const msg1 = createDNSMessageBuffer(googleTest);
+    // await sendDNSMessageUDP(msg1, dnsServers.cloudflare.ipAddress, 53);
     const msg2 = createDNSMessageBuffer(cloudflareTest);
     await sendDNSMessageUDP(msg2, dnsServers.cloudflare.ipAddress, 53);
 };
