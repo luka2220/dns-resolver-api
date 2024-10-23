@@ -1,6 +1,6 @@
-import { encodeHostname, createDNSMessageBuffer } from './encoding';
+import { encodeHostname, createDNSMessageBuffer } from './encoding/main';
 import { sendDNSMessageUDP } from './udp';
-import { DNSMessage } from './types';
+import { DNSMessage } from './encoding/types';
 
 interface serverInfo {
     hostname: string;

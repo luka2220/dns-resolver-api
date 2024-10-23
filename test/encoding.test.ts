@@ -3,8 +3,8 @@ import {
     createDNSMessageBuffer,
     encodeHostname,
     parseDNSHeader,
-} from '../src/encoding';
-import { DNSMessage, DNSHeaderSection } from '../src/types';
+} from '../src/encoding/main';
+import { DNSMessage, DNSHeaderSection } from '../src/encoding/types';
 
 describe('encodeHostname', () => {
     it('should encode a hostname string correctly', () => {
