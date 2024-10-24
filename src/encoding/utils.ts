@@ -13,5 +13,6 @@ export function cleanResourceIP(buf: Buffer): string {
     return ipAddress;
 }
 
-
-
+export function cleanNSrecord_ip(buf: Buffer): string {
+    return buf.toString('hex');
+}

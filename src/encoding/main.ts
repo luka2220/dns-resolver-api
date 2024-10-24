@@ -5,7 +5,7 @@ import {
     DNSQuestionSection,
     DNSResourceRecord,
 } from './types';
-import { readNBytes, cleanResourceIP } from './utils'
+import { readNBytes, cleanResourceIP, cleanNSrecord_ip } from './utils'
 
 
 // NOTE: Creates a message buffer to store the DNS message being sent
@@ -132,13 +132,13 @@ export function parseDNSResourceRecord(
             // Switching through the DNS record type
             switch (state.type) {
                 case 1:
-                    const raw = response.subarray(state.pos, state.pos + rdlength);
+                    const rawA = response.subarray(state.pos, state.pos + rdlength);
                     state.pos += rdlength;
-                    return cleanResourceIP(raw);
+                    return cleanResourceIP(rawA);
                 case 2:
-                    const raw2 = response.subarray(state.pos, state.pos + rdlength);
-                    state.pos += rdlength;
-                    return cleanResourceIP(raw2);
+                    const rawNS = response.subarray(state.pos, state.pos + rdlength);
+                    state.pos += rdlength
+                    return cleanNSrecord_ip(rawNS);
                 default:
                     return "";
             }

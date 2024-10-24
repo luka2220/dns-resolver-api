@@ -1,6 +1,7 @@
 import { encodeHostname, createDNSMessageBuffer } from './encoding/main';
 import { sendDNSMessageUDP } from './udp';
 import { DNSMessage } from './encoding/types';
+import { server, PORT } from './api/main';
 
 interface serverInfo {
     hostname: string;
@@ -36,6 +37,10 @@ const dnsServers: Record<string, serverInfo> = {
 };
 
 const run = async () => {
+    server.listen(PORT, () => {
+        console.log(`[server]: Server running at http://localhost:${PORT}`)
+    })
+
     console.log('DNS resolver running 👾\n');
 
     let googleTest: DNSMessage = {
