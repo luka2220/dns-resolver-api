@@ -5,8 +5,7 @@ import {
     DNSQuestionSection,
     DNSResourceRecord,
 } from './types';
-import { readNBytes, cleanResourceIP, cleanNSrecord_ip } from './utils'
-
+import { readNBytes, cleanResourceIP, cleanNSrecord_ip } from './utils';
 
 // NOTE: Creates a message buffer to store the DNS message being sent
 // Allocates 12 bytes for the header plus the length of the question
@@ -42,7 +41,6 @@ export function encodeHostname(q: string): Buffer {
 
     return Buffer.concat(parts);
 }
-
 
 // NOTE: Parses the header section of the DNS response, 12 bytes (0 - 11)
 // For the flags we shift the bits based on the bit length for each field
@@ -132,15 +130,21 @@ export function parseDNSResourceRecord(
             // Switching through the DNS record type
             switch (state.type) {
                 case 1:
-                    const rawA = response.subarray(state.pos, state.pos + rdlength);
+                    const rawA = response.subarray(
+                        state.pos,
+                        state.pos + rdlength,
+                    );
                     state.pos += rdlength;
                     return cleanResourceIP(rawA);
                 case 2:
-                    const rawNS = response.subarray(state.pos, state.pos + rdlength);
-                    state.pos += rdlength
+                    const rawNS = response.subarray(
+                        state.pos,
+                        state.pos + rdlength,
+                    );
+                    state.pos += rdlength;
                     return cleanNSrecord_ip(rawNS);
                 default:
-                    return "";
+                    return '';
             }
         })(),
         currentPosition: state.pos,
@@ -215,4 +219,3 @@ export function parseServerResponse(response: Buffer) {
             break;
     }
 }
-
