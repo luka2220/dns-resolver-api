@@ -5,13 +5,8 @@ import {
     DNSQuestionSection,
     DNSResourceRecord,
 } from './types';
+import { readNBytes, cleanResourceIP } from './utils'
 
-// NOTE: Utility function for reading n bytes from the buffer, and increasing the position n bytes
-function readNBytes(n: number, buf: Buffer, state: { pos: number }): number {
-    const bRead = buf.readUIntBE(state.pos, n);
-    state.pos += n;
-    return bRead;
-}
 
 // NOTE: Creates a message buffer to store the DNS message being sent
 // Allocates 12 bytes for the header plus the length of the question
@@ -48,75 +43,6 @@ export function encodeHostname(q: string): Buffer {
     return Buffer.concat(parts);
 }
 
-// NOTE: Parse through the servers response message and display the import data
-export function parseServerResponse(response: Buffer) {
-    console.log(`Server response = ${response.toString('hex')}`);
-    const state = { pos: 12 }; // buffer read position set to 12 to use after parsing the header section
-
-    console.log('\nServer DNS header response: ');
-    const responseHeader = parseDNSHeader(response);
-    for (const [k, v] of Object.entries(responseHeader)) {
-        if (k == 'flags') {
-            for (const [fk, fv] of Object.entries(responseHeader[k])) {
-                console.log(`flags[${fk}]: ${fv}`);
-            }
-        } else {
-            console.log(`${k}: ${v}`);
-        }
-    }
-
-    console.log('\nServer DNS question response: ');
-    const query = { type: 0 };
-    for (let i = 0; i < responseHeader.numQuestions; i++) {
-        console.log(`Question ${i + 1}`);
-
-        const questionSection = parseDNSQuestion(response, state.pos);
-        for (const [k, v] of Object.entries(questionSection)) {
-            console.log(`${k}: ${v}`);
-        }
-
-        state.pos = questionSection.currentPosition;
-        query.type = questionSection.queryType;
-    }
-
-    // Check the question response type
-    // Type 1 - A record
-    // Type 2 - NS record
-    switch (query.type) {
-        case 1:
-            console.log('\nServer DNS answer response: ');
-            for (let i = 0; i < responseHeader.ansCount; i++) {
-                console.log(`Answer ${i + 1}`);
-
-                const answerSection = parseDNSResourceRecord(
-                    response,
-                    state.pos,
-                );
-                for (const [k, v] of Object.entries(answerSection)) {
-                    console.log(`${k}: ${v}`);
-                }
-
-                state.pos = answerSection.currentPosition;
-            }
-            break;
-        case 2:
-            console.log(`\nServer DNS NS record response`);
-            for (let i = 0; i < responseHeader.nscount; i++) {
-                console.log(`\nNS Record ${i + 1}`);
-
-                const answerSection = parseDNSResourceRecord(
-                    response,
-                    state.pos,
-                );
-                for (const [k, v] of Object.entries(answerSection)) {
-                    console.log(`${k}: ${v}`);
-                }
-
-                state.pos = answerSection.currentPosition;
-            }
-            break;
-    }
-}
 
 // NOTE: Parses the header section of the DNS response, 12 bytes (0 - 11)
 // For the flags we shift the bits based on the bit length for each field
@@ -186,12 +112,16 @@ export function parseDNSResourceRecord(
     response: Buffer,
     currentPosition: number,
 ): DNSResourceRecord {
-    const state = { pos: currentPosition };
+    const state = { pos: currentPosition, type: 0 };
     let rdlength = 0;
 
     const answer: DNSResourceRecord = {
         name: readNBytes(2, response, state),
-        type: readNBytes(2, response, state),
+        type: ((): number => {
+            const type = readNBytes(2, response, state);
+            state.type = type;
+            return type;
+        })(),
         class: readNBytes(2, response, state),
         ttl: readNBytes(4, response, state),
         rdlength: ((): number => {
@@ -199,9 +129,19 @@ export function parseDNSResourceRecord(
             return rdlength;
         })(),
         rdata_ipAdd: ((): string => {
-            const raw = response.subarray(state.pos, state.pos + rdlength);
-            state.pos += rdlength;
-            return cleanResourceIP(raw);
+            // Switching through the DNS record type
+            switch (state.type) {
+                case 1:
+                    const raw = response.subarray(state.pos, state.pos + rdlength);
+                    state.pos += rdlength;
+                    return cleanResourceIP(raw);
+                case 2:
+                    const raw2 = response.subarray(state.pos, state.pos + rdlength);
+                    state.pos += rdlength;
+                    return cleanResourceIP(raw2);
+                default:
+                    return "";
+            }
         })(),
         currentPosition: state.pos,
     };
@@ -209,8 +149,70 @@ export function parseDNSResourceRecord(
     return answer;
 }
 
-// NOTE: Helper function for cleaning the RDATA resource record
-function cleanResourceIP(buf: Buffer): string {
-    const ipAddress = Array.from(buf).join('.');
-    return ipAddress;
+// NOTE: Parse through the servers response message and display the import data
+export function parseServerResponse(response: Buffer) {
+    console.log(`Server response = ${response.toString('hex')}`);
+    const state = { pos: 12 }; // buffer read position set to 12 to use after parsing the header section
+
+    console.log('\nServer DNS header response: ');
+    const responseHeader = parseDNSHeader(response);
+    for (const [k, v] of Object.entries(responseHeader)) {
+        if (k == 'flags') {
+            for (const [fk, fv] of Object.entries(responseHeader[k])) {
+                console.log(`flags[${fk}]: ${fv}`);
+            }
+        } else {
+            console.log(`${k}: ${v}`);
+        }
+    }
+
+    console.log('\nServer DNS question response: ');
+    const query = { type: 0 };
+    for (let i = 0; i < responseHeader.numQuestions; i++) {
+        console.log(`Question ${i + 1}`);
+
+        const questionSection = parseDNSQuestion(response, state.pos);
+        for (const [k, v] of Object.entries(questionSection)) {
+            console.log(`${k}: ${v}`);
+        }
+
+        state.pos = questionSection.currentPosition;
+        query.type = questionSection.queryType;
+    }
+
+    switch (query.type) {
+        case 1:
+            console.log('\nServer DNS answer response: ');
+            for (let i = 0; i < responseHeader.ansCount; i++) {
+                console.log(`Answer ${i + 1}`);
+
+                const answerSection = parseDNSResourceRecord(
+                    response,
+                    state.pos,
+                );
+                for (const [k, v] of Object.entries(answerSection)) {
+                    console.log(`${k}: ${v}`);
+                }
+
+                state.pos = answerSection.currentPosition;
+            }
+            break;
+        case 2:
+            console.log(`\nServer DNS NS record response`);
+            for (let i = 0; i < responseHeader.nscount; i++) {
+                console.log(`\nNS Record ${i + 1}`);
+
+                const answerSection = parseDNSResourceRecord(
+                    response,
+                    state.pos,
+                );
+                for (const [k, v] of Object.entries(answerSection)) {
+                    console.log(`${k}: ${v}`);
+                }
+
+                state.pos = answerSection.currentPosition;
+            }
+            break;
+    }
 }
+
